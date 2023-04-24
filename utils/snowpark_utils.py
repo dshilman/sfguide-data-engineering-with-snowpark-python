@@ -1,6 +1,9 @@
 from snowflake.snowpark import Session
+from dotenv import load_dotenv
 import os
 from typing import Optional
+
+load_dotenv()
 
 # Class to store a singleton connection option
 class SnowflakeConnection(object):
@@ -24,21 +27,22 @@ def get_snowpark_session() -> Session:
     # TODO: Look for a creds.json style file. This should be the way all snowpark
     # related tools work IMO
     # if using snowsql config, like snowcli does
-    elif os.path.exists(os.path.expanduser('~/.snowsql/config')):
-        snowpark_config = get_snowsql_config()
-        SnowflakeConnection().connection = Session.builder.configs(snowpark_config).create()
-    # otherwise configure from environment variables
-    elif "SNOWSQL_ACCOUNT" in os.environ:
+    else:
         snowpark_config = {
-            "account": os.environ["SNOWSQL_ACCOUNT"],
-            "user": os.environ["SNOWSQL_USER"],
-            "password": os.environ["SNOWSQL_PWD"],
-            "role": os.environ["SNOWSQL_ROLE"],
-            "warehouse": os.environ["SNOWSQL_WAREHOUSE"],
-            "database": os.environ["SNOWSQL_DATABASE"],
-            "schema": os.environ["SNOWSQL_SCHEMA"]
-        }
+            "account": os.getenv("SNOWSQL_ACCOUNT"),
+            "user": os.getenv("SNOWSQL_USER"),
+            "password": os.getenv("SNOWSQL_PWD"),
+            "role": os.getenv("SNOWSQL_ROLE"),
+            "warehouse": os.getenv("SNOWSQL_WAREHOUSE"),
+            "database": os.getenv("SNOWSQL_DATABASE"),
+            #"schema": os.getenv("SNOWSQL_SCHEMA")
+        }    
         SnowflakeConnection().connection = Session.builder.configs(snowpark_config).create()
+
+    # elif os.path.exists('C:/Users/ShilmanD/.snowsql'):
+    #     snowpark_config = get_snowsql_config()
+    #     SnowflakeConnection().connection = Session.builder.configs(snowpark_config).create()
+    # # otherwise configure from environment variables
 
     if SnowflakeConnection().connection:
         return SnowflakeConnection().connection  # type: ignore
@@ -52,8 +56,7 @@ def get_snowpark_session() -> Session:
 # need to update snowcli to make that happen
 def get_snowsql_config(
     connection_name: str = 'dev',
-    config_file_path: str = os.path.expanduser('~/.snowsql/config'),
-) -> dict:
+    config_file_path: str = os.path.expanduser('C:/Users/ShilmanD/.snowsql')) -> dict:
     import configparser
 
     snowsql_to_snowpark_config_mapping = {
@@ -66,19 +69,15 @@ def get_snowsql_config(
         'dbname': 'database',
         'schemaname': 'schema'
     }
-    try:
-        config = configparser.ConfigParser(inline_comment_prefixes="#")
-        connection_path = 'connections.' + connection_name
+    config = configparser.ConfigParser(inline_comment_prefixes="#")
+    connection_path = 'connections.' + connection_name
 
-        config.read(config_file_path)
-        session_config = config[connection_path]
-        # Convert snowsql connection variable names to snowcli ones
-        session_config_dict = {
-            snowsql_to_snowpark_config_mapping[k]: v.strip('"')
-            for k, v in session_config.items()
-        }
-        return session_config_dict
-    except Exception:
-        raise Exception(
-            "Error getting snowsql config details"
-        )
+    config.read(config_file_path)
+    session_config = config[connection_path]
+    # Convert snowsql connection variable names to snowcli ones
+    session_config_dict = {
+        snowsql_to_snowpark_config_mapping[k]: v.strip('"')
+        for k, v in session_config.items()
+    }
+    return session_config_dict
+
