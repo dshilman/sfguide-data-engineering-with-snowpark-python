@@ -1,3 +1,4 @@
-snowflake-snowpark-python[pandas]
+#snowflake-snowpark-python[pandas]
+snowflake
 snowflake-cli-labs
 python-dotenv
